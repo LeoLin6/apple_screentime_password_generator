@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screentime Password Generator</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .step {
+            background-color: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .step h3 {
+            color: #00ff00;
+            margin-top: 0;
+            font-size: 24px;
+        }
+        .step p {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        .button {
+            background-color: #00ff00;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .button:hover {
+            background-color: #00cc00;
+        }
+        .button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+        .hidden {
+            display: none;
+        }
+        .password-display {
+            font-size: 24px;
+            color: #00ff00;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .video-container {
+            margin: 20px 0;
+        }
+        .video-preview {
+            width: 100%;
+            max-width: 800px;
+            height: 600px;
+            background-color: #000;
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+        .status {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background-color: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #00ff00;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .error {
+            color: #ff4444;
+            background-color: #330000;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>=== Screentime Password Generator ===</h1>
+        <p>Memory Erasure Technique</p>
+        <p>========================================</p>
+        
+        <button class="button" onclick="generatePasswordAndVideo()">Generate Password & Video</button>
+        
+        <div id="processing" class="hidden">
+            <div class="step">
+                <h3 id="status-title">Processing...</h3>
+                <p id="status-message">Generating password and creating video...</p>
+                <div class="progress">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="error-message" class="hidden error"></div>
+        
+        <div id="password-result" class="hidden">
+            <h2>🎉 PASSWORD COMPLETE!</h2>
+            <div class="password-display" id="final-password"></div>
+            <button class="button" onclick="copyPassword()">Copy Password</button>
+            <button class="button" onclick="downloadVideo()">Download Video</button>
+            <button class="button" onclick="resetGenerator()">Generate New Password</button>
+        </div>
+
+        <div class="video-container">
+            <video id="video-preview" class="video-preview" controls></video>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentPassword = '';
+        let currentVideoUrl = '';
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+            document.getElementById('processing').classList.add('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('error-message').classList.add('hidden');
+        }
+
+        function generatePasswordAndVideo() {
+            // Hide any previous errors
+            hideError();
+            
+            // Show processing screen
+            document.getElementById('processing').classList.remove('hidden');
+            document.getElementById('password-result').classList.add('hidden');
+            
+            // Update status
+            document.getElementById('status-title').textContent = 'Generating Password...';
+            document.getElementById('status-message').textContent = 'Creating password and video...';
+            
+            // Simulate progress
+            let progress = 0;
+            const progressBar = document.getElementById('progress-bar');
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress > 90) progress = 90;
+                progressBar.style.width = progress + '%';
+            }, 200);
+            
+            // Make request to backend
+            fetch('/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                
+                if (data.success) {
+                    currentPassword = data.password;
+                    currentVideoUrl = data.video_url;
+                    
+                    // Update status
+                    document.getElementById('status-title').textContent = 'Complete!';
+                    document.getElementById('status-message').textContent = 'Password and video generated successfully!';
+                    
+                    // Show video
+                    document.getElementById('video-preview').src = currentVideoUrl;
+                    
+                    // Show result after a short delay
+                    setTimeout(() => {
+                        showPasswordResult();
+                    }, 1000);
+                } else {
+                    showError(data.error || 'Failed to generate password and video');
+                }
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                showError('Network error: ' + error.message);
+            });
+        }
+
+        function showPasswordResult() {
+            document.getElementById('processing').classList.add('hidden');
+            document.getElementById('password-result').classList.remove('hidden');
+            document.getElementById('final-password').textContent = currentPassword;
+        }
+
+        function copyPassword() {
+            navigator.clipboard.writeText(currentPassword).then(() => {
+                alert('Password copied to clipboard!');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = currentPassword;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('Password copied to clipboard!');
+            });
+        }
+
+        function downloadVideo() {
+            if (currentVideoUrl) {
+                const a = document.createElement('a');
+                a.href = currentVideoUrl;
+                a.download = 'password_generator_demo.mp4';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+        }
+
+        function resetGenerator() {
+            document.getElementById('processing').classList.add('hidden');
+            document.getElementById('password-result').classList.add('hidden');
+            document.getElementById('video-preview').src = '';
+            currentPassword = '';
+            currentVideoUrl = '';
+            hideError();
+        }
+    </script>
+</body>
+</html>
