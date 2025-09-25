@@ -20,5 +20,8 @@ COPY . .
 # Expose port
 EXPOSE 8000
 
+# Set default port
+ENV PORT=8000
+
 # Start the application
-CMD ["gunicorn", "application:application", "--bind", "0.0.0.0:8000"]
+CMD ["sh", "-c", "gunicorn application:application --bind 0.0.0.0:${PORT:-8000}"]
